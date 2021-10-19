@@ -1,15 +1,21 @@
 import numpy as np
 
-from .utils import stochastic_gradient, predict
+from .utils import stochastic_gradient, coordinate_gradient, predict
 
 
 class LogisticRegression:
-    def __init__(self):
+    def __init__(self, function='gradient'):
         self.w = None
         self.b = None
+        self.function = function
+        self.functions = {
+            'gradient': stochastic_gradient,
+            'coordinate': coordinate_gradient
+        }
 
     def fit(self, train_data_X, train_data_y, learning_rate, epochs):
-        self.w, self.b = stochastic_gradient(train_data_X, train_data_y, learning_rate, epochs)
+        gradient_function = self.functions.get(self.function, stochastic_gradient)
+        self.w, self.b = gradient_function(train_data_X, train_data_y, learning_rate, epochs)
         return self
 
     def predict_single(self, x):

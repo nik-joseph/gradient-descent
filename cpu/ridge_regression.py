@@ -1,11 +1,11 @@
 import numpy as np
 
 from .utils import stochastic_gradient, coordinate_gradient, predict
-from .functions import SigmoidLogisticRegression
+from .functions import RidgeRegression as ActivationFunction
 
 
-class LogisticRegression:
-    def __init__(self, function='gradient'):
+class RidgeRegression:
+    def __init__(self, function='gradient', l2=1):
         self.w = None
         self.b = None
         self.function = function
@@ -13,12 +13,14 @@ class LogisticRegression:
             'gradient': stochastic_gradient,
             'coordinate': coordinate_gradient
         }
-        self.activation_function = SigmoidLogisticRegression
+        self.activation_function = ActivationFunction
+        self.l2 = l2
 
     def fit(self, train_data_X, train_data_y, learning_rate, epochs):
         gradient_function = self.functions.get(self.function, stochastic_gradient)
         self.w, self.b = gradient_function(
-            train_data_X, train_data_y, learning_rate, epochs, function=self.activation_function
+            train_data_X, train_data_y, learning_rate, epochs, function=self.activation_function,
+            func_args={'l2': self.l2}
         )
         return self
 

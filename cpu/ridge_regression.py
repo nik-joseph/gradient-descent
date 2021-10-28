@@ -5,7 +5,7 @@ from .functions import RidgeRegression as ActivationFunction
 
 
 class RidgeRegression:
-    def __init__(self, function='gradient', l2=1):
+    def __init__(self, function='gradient', l2=0.01):
         self.w = None
         self.b = None
         self.function = function

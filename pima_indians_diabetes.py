@@ -19,7 +19,10 @@ X, y = data[:, 0:-1], data[:, -1]
 kf = KFold(random_state=1, shuffle=True)
 
 function_scores = []
-for function in ['gradient', 'coordinate']:
+
+functions_to_run = ['gradient', 'coordinate', 'stochastic_coordinate']
+
+for function in functions_to_run:
     # Make model pipeline
     model = Pipeline(
         steps=[
@@ -37,5 +40,5 @@ for function in ['gradient', 'coordinate']:
     function_scores.append(np.mean(scores))
 
 
-for function, score in zip(['gradient', 'coordinate'], function_scores):
+for function, score in zip(functions_to_run, function_scores):
     print(f"{function} function score:\t{score}")

@@ -17,7 +17,7 @@ def predict(x, w, b, function):
     return function.function(b + np.dot(x_ar, w_ar.transpose()))
 
 
-def stochastic_gradient(train_data_X, train_data_y, learning_rate=None, epochs=None, function=Function, func_args=None):
+def gradient(train_data_X, train_data_y, learning_rate=None, epochs=None, function=Function, func_args=None):
     """
     :param train_data_X: input data attributes
     :param train_data_y: input data y hat
@@ -93,4 +93,58 @@ def coordinate_gradient(train_data_X, train_data_y, learning_rate=None, epochs=N
 
             # Update bias
             b = b - learning_rate * function.partial_derivative_b(input_y, y_hat)
+    return w, b
+
+
+def stochastic_coordinate(train_data_X, train_data_y,
+                          learning_rate=None, epochs=None, function=Function, func_args=None):
+    """
+    :param train_data_X: input data attributes
+    :param train_data_y: input data y hat
+    :param learning_rate: learning rate
+    :param epochs: number of iterations to train
+    :param function: an class of type Function having activation function and its derivative
+    :param func_args: holds an arguments required for weight and bias update
+    :return: weight and bias of the model w, b
+    """
+    if func_args is None:
+        func_args = {}
+
+    # Initialize weight and bias to 0
+    w, b = np.zeros(len(train_data_X[0])), 0
+
+    # Raise required errors
+    if not learning_rate:
+        raise Exception("Learning rate not set!")
+    if not epochs:
+        raise Exception("Number of epochs not set!")
+    if not issubclass(function, Function):
+        raise Exception("Given function not instance of Function!")
+
+    def gen_shuffled_data(X, y):
+        # Function to simulate sample without replacement
+        length = len(X)
+        indices = list(range(length))
+        np.random.shuffle(indices)
+        for i in indices:
+            yield X[i], y[i]
+
+    # Lower learning rate to a smaller value
+    learning_rate = (learning_rate / w.shape[0])
+
+    # Start epoch
+    for _ in trange(epochs):
+        for input_X, input_y in gen_shuffled_data(train_data_X, train_data_y):
+
+            # Compute prediction
+            y_hat = predict(input_X, w, b, function=function)
+
+            # Get random attribute to descent
+            index = np.random.randint(0, w.shape)[0]
+
+            # Update weight on learning rate and calculate error for current weight based on index
+            w[index] = w[index] - learning_rate * function.partial_derivative_w(
+                input_X[index], input_y, y_hat, w[index], **func_args
+            )
+
     return w, b

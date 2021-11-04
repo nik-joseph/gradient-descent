@@ -15,7 +15,7 @@ def predict(x, w, b, function):
     x_ar, w_ar = np.array(x, dtype=float), np.array(w, dtype=float)
     if x_ar.shape != w_ar.shape:
         raise Exception("Input and weight not same size in prediction")
-    return function.function(b + np.dot(x_ar, w_ar.transpose()))
+    return function.function(b + function().dot(x_ar, w_ar))
 
 
 def stochastic_coordinate(train_data_X, train_data_y,
@@ -35,6 +35,8 @@ def stochastic_coordinate(train_data_X, train_data_y,
     # Initialize weight and bias to 0
     w, b = np.zeros(len(train_data_X[0])), 0
 
+    ww = np.zeros(len(train_data_X[0]) + 1, dtype=np.float64)
+
     # Raise required errors
     if not learning_rate:
         raise Exception("Learning rate not set!")
@@ -43,13 +45,34 @@ def stochastic_coordinate(train_data_X, train_data_y,
     if not issubclass(function, Function):
         raise Exception("Given function not instance of Function!")
 
-    learning_rate = learning_rate / (w.shape[0])
+    l2 = func_args.pop('l2')
+    learning_rate = learning_rate / (ww.shape[0])
+
+    # Repeat learning rate and l2 to size of ww
+    learning_rate_v2 = np.repeat(learning_rate, ww.shape)
+    l2 = np.concatenate((np.repeat(l2, w.shape), np.array([0])))
+
+    # Create XX from train data
+    xx = np.c_[train_data_X, np.ones(train_data_X.shape[0])]
+
+    # Copy data to gpu
+    train_data_X_gpu = cuda.to_device(xx)
+    train_data_y_gpu = cuda.to_device(train_data_y)
+    learning_rate_gpu = cuda.to_device(learning_rate_v2)
+    l2_gpu = cuda.to_device(l2)
+    ww_gpu = cuda.to_device(ww)
+
+    # Create grad array in gpu
+    w_grad_gpu = cuda.to_device(np.zeros(ww.shape))
 
     # Start epoch
     for _ in trange(epochs):
-        w, b = function.cuda_train(
-            train_data_X, train_data_y, w, b, learning_rate, **func_args
+        function().cuda_train(
+            train_data_X_gpu, train_data_y_gpu, ww_gpu, learning_rate_gpu, l2_gpu, w_grad_gpu
         )
         cuda.synchronize()
 
-    return w, b
+    # Copy weight and bias to cpu
+    ww = ww_gpu.copy_to_host()
+
+    return ww[:-1], ww[-1]

@@ -28,7 +28,7 @@ class RidgeRegression:
             raise Exception('Number of dimensions not 2!')
 
         return np.array([
-            round(predict(x, self.w, self.b, function=self.activation_function))
+            predict(x, self.w, self.b, function=self.activation_function)
             for x in X_test
         ], dtype=float)
 

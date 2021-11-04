@@ -27,7 +27,7 @@ for function in functions_to_run:
     model = Pipeline(
         steps=[
             ("scale", MinMaxScaler()),
-            ("regression", cpu.LogisticRegression(function=function)),
+            ("regression", cpu.RidgeRegression(function=function)),
         ]
     )
 

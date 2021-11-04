@@ -36,4 +36,4 @@ class RidgeRegression:
 
     def score(self, X_test, y_test):
         y_hat = self.predict(X_test)
-        return (1 - (y_hat - y_test) ** 2).mean()
+        return (y_hat == y_test).mean()

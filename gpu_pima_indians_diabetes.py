@@ -34,7 +34,7 @@ for function in functions_to_run:
     scores = []
     for train_index, test_index in kf.split(X):
         X_train, X_test, y_train, y_test = X[train_index], X[test_index], y[train_index], y[test_index]
-        model.fit(X_train, y_train, regression__learning_rate=0.1, regression__epochs=100)
+        model.fit(X_train, y_train, regression__learning_rate=0.004, regression__epochs=500)
         scores.append(model.score(X_test, y_test))
 
     function_scores.append(np.mean(scores))

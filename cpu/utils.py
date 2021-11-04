@@ -140,11 +140,14 @@ def stochastic_coordinate(train_data_X, train_data_y,
             y_hat = predict(input_X, w, b, function=function)
 
             # Get random attribute to descent
-            index = np.random.randint(0, w.shape)[0]
+            index = np.random.randint(0, w.shape[0] + 1)
 
-            # Update weight on learning rate and calculate error for current weight based on index
-            w[index] = w[index] - learning_rate * function.partial_derivative_w(
-                input_X[index], input_y, y_hat, w[index], **func_args
-            )
+            if index < w.shape[0]:
+                # Update weight on learning rate and calculate error for current weight based on index
+                w[index] = w[index] - learning_rate * function.partial_derivative_w(
+                    input_X[index], input_y, y_hat, w[index], **func_args
+                )
+            else:
+                b = b - learning_rate * function.partial_derivative_b(input_y, y_hat)
 
     return w, b

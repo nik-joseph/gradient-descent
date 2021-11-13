@@ -10,7 +10,7 @@ MIN_BLOCKS = 96
 def cuda_compute_weights(X, y, y_hat, learning_rate, l2, w, w_grad, w_rng):
     i = cuda.grid(1)
     if i < w.shape[0]:
-        w_index = xoroshiro128p_next(w_rng, i) % w.shape[0]
+        w_index = w_rng[i]
 
         # Compute partial w_grad
         partial_w_grad = - learning_rate[w_index] * (

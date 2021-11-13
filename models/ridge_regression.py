@@ -114,11 +114,8 @@ class GPURidgeRegression(RidgeRegression):
         cuda.synchronize()
 
         # Create weight rng states
-        self.w_rng = create_xoroshiro128p_states(
-            int(
-                np.ceil(self.train_data_XX_gpu.shape[0] / self.THREADS_PER_BLOCK
-                        ) + self.MIN_BLOCKS) * self.THREADS_PER_BLOCK,
-            seed=np.random.random()
+        self.w_rng = cuda.to_device(
+            [np.random.randint(self.ww_gpu.shape[0]) for _ in range(self.train_data_XX_gpu.shape[0])]
         )
 
         # Wait for sync

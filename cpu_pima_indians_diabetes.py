@@ -20,7 +20,7 @@ kf = KFold(random_state=1, shuffle=True)
 
 function_scores = []
 
-functions_to_run = ['gradient', 'coordinate', 'stochastic_coordinate']
+functions_to_run = ['stochastic_coordinate']
 
 for function in functions_to_run:
     # Make model pipeline
@@ -34,7 +34,7 @@ for function in functions_to_run:
     scores = []
     for train_index, test_index in kf.split(X):
         X_train, X_test, y_train, y_test = X[train_index], X[test_index], y[train_index], y[test_index]
-        model.fit(X_train, y_train, regression__learning_rate=0.004, regression__epochs=500)
+        model.fit(X_train, y_train, regression__learning_rate=0.01, regression__epochs=1000)
         scores.append(model.score(X_test, y_test))
 
     function_scores.append(np.mean(scores))

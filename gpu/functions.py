@@ -77,7 +77,12 @@ class RidgeRegression(Function):
     def partial_derivative_b(input_y, y_hat):
         return -2 * (input_y - y_hat)
 
-    def cuda_train(self, X, y, ww, learning_rate, l2, w_grad_gpu):
+    def cuda_train(self, X, y, ww, learning_rate, l2, w_grad_gpu, batch=None, og_X=None, og_y=None):
+
+        if batch is not None:
+            X = cuda.to_device(og_X[batch])
+            y = cuda.to_device(og_y[batch])
+
         # Compute y_hat and store to gpu
         y_hat_gpu = cuda_dot_vector(X, ww)
 

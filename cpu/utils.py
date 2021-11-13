@@ -1,3 +1,5 @@
+import datetime
+
 import numpy as np
 from tqdm import trange
 from .functions import Function
@@ -97,7 +99,7 @@ def coordinate_gradient(train_data_X, train_data_y, learning_rate=None, epochs=N
 
 
 def stochastic_coordinate(train_data_X, train_data_y,
-                          learning_rate=None, epochs=None, function=Function, func_args=None):
+                          learning_rate=None, epochs=None, function=Function, func_args=None, analysis=False):
     """
     :param train_data_X: input data attributes
     :param train_data_y: input data y hat
@@ -105,6 +107,7 @@ def stochastic_coordinate(train_data_X, train_data_y,
     :param epochs: number of iterations to train
     :param function: an class of type Function having activation function and its derivative
     :param func_args: holds an arguments required for weight and bias update
+    :param analysis: For comparison
     :return: weight and bias of the model w, b
     """
     if func_args is None:
@@ -132,6 +135,10 @@ def stochastic_coordinate(train_data_X, train_data_y,
     # Lower learning rate to a smaller value
     learning_rate = (learning_rate / w.shape[0])
 
+    # vars for plotting
+    report = []
+    start_time = datetime.datetime.now()
+
     # Start epoch
     for _ in trange(epochs):
         for input_X, input_y in gen_shuffled_data(train_data_X, train_data_y):
@@ -149,5 +156,18 @@ def stochastic_coordinate(train_data_X, train_data_y,
                 )
             else:
                 b = b - learning_rate * function.partial_derivative_b(input_y, y_hat)
+        if analysis:
+            report_predict(w, b, train_data_X, train_data_y, function, report, start_time)
 
-    return w, b
+    return w, b, report
+
+
+def report_predict(w, b, X_test, y_test, activation_function, report, start_time):
+    if X_test.ndim != 2:
+        raise Exception('Number of dimensions not 2!')
+    y_hat = np.array([
+        predict(x, w, b, function=activation_function)
+        for x in X_test
+    ], dtype=float)
+    score = (1 - (y_hat - y_test) ** 2).mean()
+    report.append((score, datetime.datetime.now() - start_time))

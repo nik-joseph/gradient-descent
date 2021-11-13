@@ -13,7 +13,9 @@ def cuda_compute_weights(X, y, y_hat, learning_rate, l2, w, w_grad, w_rng):
         w_index = xoroshiro128p_next(w_rng, i) % w.shape[0]
 
         # Compute partial w_grad
-        partial_w_grad = - learning_rate[0] * ((2 * X[i][w_index] * (y[i] - y_hat[i])) + (2 * l2[0] * w[w_index]))
+        partial_w_grad = - learning_rate[w_index] * (
+                (2 * X[i][w_index] * (y[i] - y_hat[i])) + (2 * l2[w_index] * w[w_index])
+        )
 
         # Update w_grad
         cuda.atomic.add(

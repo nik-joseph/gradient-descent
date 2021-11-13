@@ -8,6 +8,7 @@ class RidgeRegression:
     def __init__(self, function='stochastic_coordinate', l2=0.01):
         self.w = None
         self.b = None
+        self.report = []
         self.function = function
         self.functions = {
             'stochastic_coordinate': stochastic_coordinate,
@@ -15,11 +16,11 @@ class RidgeRegression:
         self.activation_function = ActivationFunction
         self.l2 = l2
 
-    def fit(self, train_data_X, train_data_y, learning_rate, epochs):
+    def fit(self, train_data_X, train_data_y, learning_rate, epochs, *args, **kwargs):
         gradient_function = self.functions.get(self.function, stochastic_coordinate)
-        self.w, self.b = gradient_function(
+        self.w, self.b, self.report = gradient_function(
             train_data_X, train_data_y, learning_rate, epochs, function=self.activation_function,
-            func_args={'l2': self.l2}
+            func_args={'l2': self.l2}, *args, **kwargs
         )
         return self
 

@@ -123,14 +123,22 @@ class GPURidgeRegression(RidgeRegression):
         # Wait for sync
         cuda.synchronize()
 
-        # Compute y_hat and store to gpu
-        self.__cuda_dot_vector()
-
-        # Set grad to zero
-        driver.device_memset(self.w_grad_gpu, 0, self.w_grad_gpu.size * 8)
+        # Empty y_hat_gpu
+        driver.device_memset(self.y_hat_gpu, 0, self.y_hat_gpu.size * 8)
 
         # Wait for sync
         cuda.synchronize()
+
+        # Compute dot product and store in y_hat_gpu
+        dot[
+            int(np.ceil(self.train_XX.shape[0] + self.MIN_BLOCKS / self.THREADS_PER_BLOCK)), self.THREADS_PER_BLOCK
+        ](self.og_train_XX_gpu, self.ww_gpu, self.y_hat_gpu)
+
+        # Wait for sync
+        cuda.synchronize()
+
+        # Set grad to zero
+        driver.device_memset(self.w_grad_gpu, 0, self.w_grad_gpu.size * 8)
 
         # Wait for sync
         cuda.synchronize()
@@ -151,25 +159,6 @@ class GPURidgeRegression(RidgeRegression):
         cuda_subtract[
             int(np.ceil(self.ww_gpu.shape[0] / self.THREADS_PER_BLOCK) + self.MIN_BLOCKS), self.THREADS_PER_BLOCK
         ](self.ww_gpu, self.w_grad_gpu)
-
-        # Wait for sync
-        cuda.synchronize()
-
-    def __cuda_dot_vector(self):
-        # Empty out_gpu
-        driver.device_memset(self.y_hat_gpu, 0, self.y_hat_gpu.size * 8)
-
-        # Wait for sync
-        cuda.synchronize()
-
-        # Compute blocks per grid
-        blocks_per_grid_x = int(np.ceil(self.train_XX.shape[0] + self.MIN_BLOCKS / self.THREADS_PER_BLOCK))
-        blocks_per_grid_y = int(np.ceil(self.train_XX.shape[1] + self.MIN_BLOCKS / self.THREADS_PER_BLOCK))
-
-        # Compute dot product
-        dot[
-            (blocks_per_grid_x, blocks_per_grid_y), (self.THREADS_PER_BLOCK, self.THREADS_PER_BLOCK)
-        ](self.og_train_XX_gpu, self.ww_gpu, self.y_hat_gpu)
 
         # Wait for sync
         cuda.synchronize()

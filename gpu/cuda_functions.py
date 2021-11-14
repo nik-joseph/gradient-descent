@@ -54,9 +54,14 @@ def cuda_dot(x, w, out):
 
 @cuda.jit
 def dot(x_, w_, out_):
-    i, j = cuda.grid(2)
-    if i < x_.shape[0] and j < x_.shape[1]:
-        cuda.atomic.add(out_, i, x_[i][j] * w_[j])
+    i = cuda.grid(1)
+
+    if i < x_.shape[0]:
+        sum_ = 0
+        for j in range(x_.shape[1]):
+            sum_ += x_[i][j] * w_[j]
+
+        cuda.atomic.add(out_, i, sum_)
 
 
 @cuda.jit
@@ -77,4 +82,4 @@ def cuda_zeros(x):
 def cuda_add(x):
     i = cuda.grid(1)
     if i < x.shape[0]:
-        cuda.atomic.add(x, 0, 1)
+        cuda.atomic.add(x, i, 1)

@@ -25,6 +25,26 @@ def cuda_compute_weights(X, y, y_hat, learning_rate, l2, w, w_grad, w_rng):
         )
 
 
+@cuda.jit()
+def cuda_compute_weights_v2(X, y, y_hat, learning_rate, l2, w, w_grad, w_rng, data_rng, current_epoch):
+    i = cuda.grid(1)
+    if i < w.shape[0]:
+        w_index = w_rng[current_epoch[0]][i]
+        data_index = data_rng[current_epoch[0]][i]
+
+        # Compute partial w_grad
+        partial_w_grad = - learning_rate[w_index] * (
+                (2 * X[data_index][w_index] * (y[data_index] - y_hat[data_index])) + (2 * l2[w_index] * w[w_index])
+        )
+
+        # Update w_grad
+        cuda.atomic.add(
+            w_grad,
+            w_index,
+            partial_w_grad
+        )
+
+
 @cuda.jit
 def cuda_dot(x, w, out):
     i = cuda.grid(1)
@@ -52,3 +72,9 @@ def cuda_zeros(x):
     if i < x.shape[0]:
         x[i] = 0
 
+
+@cuda.jit
+def cuda_add(x):
+    i = cuda.grid(1)
+    if i < x.shape[0]:
+        cuda.atomic.add(x, 0, 1)

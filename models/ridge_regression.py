@@ -1,9 +1,10 @@
 import numpy as np
 from numba import cuda
+from numba.cuda.cudadrv import driver
 from tqdm import trange
 
 from models.base import Model
-from gpu.cuda_functions import dot, cuda_zeros, create_xoroshiro128p_states, cuda_compute_weights, cuda_subtract
+from gpu.cuda_functions import dot, create_xoroshiro128p_states, cuda_compute_weights, cuda_subtract
 
 
 class RidgeRegression(Model):
@@ -106,9 +107,7 @@ class GPURidgeRegression(RidgeRegression):
         self.__cuda_dot_vector()
 
         # Set grad to zero
-        cuda_zeros[
-            int(np.ceil(self.ww_gpu.shape[0] / self.THREADS_PER_BLOCK) + self.MIN_BLOCKS), self.THREADS_PER_BLOCK
-        ](self.w_grad_gpu)
+        driver.device_memset(self.w_grad_gpu, 0, self.w_grad_gpu.size * 8)
 
         # Wait for sync
         cuda.synchronize()
@@ -142,9 +141,7 @@ class GPURidgeRegression(RidgeRegression):
 
     def __cuda_dot_vector(self):
         # Empty out_gpu
-        cuda_zeros[
-            int(np.ceil(self.y_hat_gpu.shape[0] / self.THREADS_PER_BLOCK) + self.MIN_BLOCKS), self.THREADS_PER_BLOCK
-        ](self.y_hat_gpu)
+        driver.device_memset(self.y_hat_gpu, 0, self.y_hat_gpu.size * 8)
 
         # Wait for sync
         cuda.synchronize()

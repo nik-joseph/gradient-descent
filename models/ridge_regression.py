@@ -50,12 +50,16 @@ class GPURidgeRegression(RidgeRegression):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ww = None
+        self.epochs = None
+        self.current_epoch = None
 
     def fit(self, train_X, train_y, epochs, *args, **kwargs):
         self.initial_variables_set = False
         self.train_X, self.train_y = train_X, train_y
+        self.epochs = epochs
 
-        for _ in trange(epochs, desc='Epochs'):
+        for current_epoch in trange(epochs, desc='Epochs'):
+            self.current_epoch = current_epoch
             X, y = self.__get_data_batch__()
             self.__fit__(X, y, *args, **kwargs)
 
@@ -99,6 +103,10 @@ class GPURidgeRegression(RidgeRegression):
             # Create grad array in gpu
             self.w_grad_gpu = cuda.to_device(np.zeros(self.ww.shape))
 
+            # Create weight rng states for complete epochs
+            self.w_rng_array = cuda.to_device(
+                np.random.randint(self.ww_gpu.shape[0], size=(self.epochs, self.train_XX.shape[0])))
+
         # Training starts here
         self.train_data_XX_gpu = cuda.to_device(X)
         self.train_data_y_gpu = cuda.to_device(y)
@@ -112,10 +120,8 @@ class GPURidgeRegression(RidgeRegression):
         # Wait for sync
         cuda.synchronize()
 
-        # Create weight rng states
-        self.w_rng = cuda.to_device(
-            [np.random.randint(self.ww_gpu.shape[0]) for _ in range(self.train_data_XX_gpu.shape[0])]
-        )
+        # Get current epoch rng states weight rng states
+        self.w_rng = self.w_rng_array[self.current_epoch]
 
         # Wait for sync
         cuda.synchronize()

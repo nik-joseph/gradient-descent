@@ -26,11 +26,11 @@ def cuda_compute_weights(X, y, y_hat, learning_rate, l2, w, w_grad, w_rng):
 
 
 @cuda.jit()
-def cuda_compute_weights_v2(X, y, y_hat, learning_rate, l2, w, w_grad, w_rng, data_rng, current_epoch):
+def cuda_compute_weights_v2(X, y, y_hat, learning_rate, l2, w, w_grad, w_rng, data_rng, current_epoch, update_count):
     i = cuda.grid(1)
-    if i < w.shape[0]:
-        w_index = w_rng[current_epoch[0]][i]
-        data_index = data_rng[current_epoch[0]][i]
+    if i < data_rng.shape[1]:
+        w_index = w_rng[current_epoch[0] - 1][i]
+        data_index = data_rng[current_epoch[0] - 1][i]
 
         # Compute partial w_grad
         partial_w_grad = - learning_rate[w_index] * (
@@ -43,6 +43,17 @@ def cuda_compute_weights_v2(X, y, y_hat, learning_rate, l2, w, w_grad, w_rng, da
             w_index,
             partial_w_grad
         )
+
+        # Update weight update count
+        cuda.atomic.add(update_count, w_index, 1)
+
+
+@cuda.jit
+def average_weight_grades(weight_grades, weight_count):
+    i = cuda.grid(1)
+    # Check if weight count is not 0
+    if i < weight_grades.shape[0] and weight_count[0] > 0:
+        weight_grades[i] = weight_grades[i] / weight_count[i]
 
 
 @cuda.jit

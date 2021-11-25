@@ -79,7 +79,6 @@ class Model:
     def get_benchmark_results(self, X, y):
         print("\nRunning Benchmarks")
 
-        self.__get_benchmark_results__(self.benchmarks['weights'][-1], X, y)
         data = [
             (time, self.__get_benchmark_results__(weights, X, y))
             for time, weights in tqdm(zip(self.benchmarks['time'], self.benchmarks['weights']), total=self.epochs)

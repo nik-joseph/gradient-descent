@@ -6,7 +6,7 @@ from numba.cuda.cudadrv import driver
 from tqdm import trange
 
 from models.base import Model
-from gpu.cuda_functions import dot, cuda_subtract, cuda_compute_weights_v2, cuda_add
+from gpu.cuda_functions import dot, cuda_subtract, cuda_compute_weights_v2, cuda_add, average_weight_grades
 
 
 class RidgeRegression(Model):
@@ -119,6 +119,9 @@ class GPURidgeRegression(RidgeRegression):
         self.w_rng_array = cuda.to_device(
             np.random.randint(self.ww_gpu.shape[0], size=(self.epochs, self.train_XX.shape[0])))
 
+        # Create counter to compute number of weight updates on epoch
+        self.weight_update_count = cuda.device_array_like(self.ww_gpu)
+
         # Create train data rng states for complete epochs
         self.data_rng_array = cuda.to_device(
             np.random.randint(self.train_XX.shape[0], size=(self.epochs, self.batch_size))
@@ -151,17 +154,29 @@ class GPURidgeRegression(RidgeRegression):
         # Set grad to zero
         driver.device_memset(self.w_grad_gpu, 0, self.w_grad_gpu.size * 8)
 
+        # Set weight update count to zero
+        driver.device_memset(self.weight_update_count, 0, self.weight_update_count.size * 8)
+
         # Wait for sync
         cuda.synchronize()
 
         # Compute weight grads
         cuda_compute_weights_v2[
             int(
-                np.ceil(self.train_XX.shape[0] / self.THREADS_PER_BLOCK) + self.MIN_BLOCKS
+                np.ceil(self.batch_size / self.THREADS_PER_BLOCK) + self.MIN_BLOCKS
             ), self.THREADS_PER_BLOCK
         ](self.og_train_XX_gpu, self.og_train_y_gpu, self.y_hat_gpu,
           self.learning_rate_gpu, self.l2_gpu, self.ww_gpu, self.w_grad_gpu,
-          self.w_rng_array, self.data_rng_array, self.current_epoch_gpu)
+          self.w_rng_array, self.data_rng_array, self.current_epoch_gpu, self.weight_update_count)
+
+        # Wait for sync
+        cuda.synchronize()
+
+        # Average the weights grades
+        average_weight_grades[int(
+            np.ceil(self.ww.shape[0] / self.THREADS_PER_BLOCK) + self.MIN_BLOCKS
+        ), self.THREADS_PER_BLOCK
+        ](self.w_grad_gpu, self.weight_update_count)
 
         # Wait for sync
         cuda.synchronize()

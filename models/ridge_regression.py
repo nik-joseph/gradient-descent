@@ -16,15 +16,16 @@ class RidgeRegression(Model):
         self.b = None
 
     def __get_data__(self):
-        indices = list(np.random.randint(self.train_X.shape[0])for _ in range(self.batch_size))
+        indices = list(
+            np.random.randint(self.train_X.shape[0])
+            for _ in range(self.batch_size)
+        )
         return zip(self.train_X[indices], self.train_y[indices])
 
-    def __fit__(self, X, y, learning_rate, l2, *args, **kwargs):
-        # Initialize weight and bias to 0 if both w and b are None
-        if not self.initial_variables_set:
-            self.w, self.b = np.zeros(len(self.train_X[0])), 0
-            self.initial_variables_set = True
+    def __initialize_variables__(self, *args, **kwargs):
+        self.w, self.b = np.zeros(len(self.train_X[0])), 0
 
+    def __fit__(self, X, y, learning_rate, l2, *args, **kwargs):
         # Compute prediction
         y_hat = self.predict(X)
 

@@ -10,7 +10,6 @@ class Model:
         self.train_X = []
         self.batch_size = batch_size
         self.epochs = None
-        self.initial_variables_set = False
         self.benchmark = benchmark
         self.benchmarks = {
             'time': [],
@@ -20,10 +19,13 @@ class Model:
         self.w, self.b = None, None
 
     def fit(self, train_X, train_y, epochs, *args, **kwargs):
-        self.initial_variables_set = False
         self.train_X, self.train_y = train_X, train_y
         self.epochs = epochs
         self.timer = datetime.datetime.now()
+
+        # Initialize class with required variables
+        self.__initialize_variables__(*args, **kwargs)
+
         for _ in trange(self.epochs, desc='Epochs'):
             self.__checkpoint__()
             for X, y in self.__get_data__():
@@ -32,6 +34,9 @@ class Model:
                 self.__benchmark__((self.w.copy(), self.b.copy()))
 
         return self
+
+    def __initialize_variables__(self, *args, **kwargs):
+        pass
 
     def predict(self, X):
         if (dim := X.ndim) == 2:

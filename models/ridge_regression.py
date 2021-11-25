@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import numpy as np
 from numba import cuda
 from numba.cuda.cudadrv import driver
@@ -42,6 +44,11 @@ class RidgeRegression(Model):
             raise Exception("Input and weight not same size in prediction")
         return self.b + np.dot(X, self.w.transpose())
 
+    def __get_benchmark_results__(self, weights, X, y):
+        self.w, self.b = weights[0], weights[1]
+        score = self.score(X, y)
+        return score
+
 
 class GPURidgeRegression(RidgeRegression):
     THREADS_PER_BLOCK = 1
@@ -50,7 +57,6 @@ class GPURidgeRegression(RidgeRegression):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ww = None
-        self.epochs = None
         self.current_epoch = None
 
     def fit(self, train_X, train_y, epochs, *args, **kwargs):
@@ -60,8 +66,12 @@ class GPURidgeRegression(RidgeRegression):
         # Initialize class with required variables
         self.__initialize_variables__(*args, **kwargs)
 
+        self.timer = datetime.now()
         for _ in trange(epochs, desc='Epochs'):
+            self.__checkpoint__()
             self.__fit__(*args, **kwargs)
+            if self.benchmark:
+                self.__benchmark__(self.ww_gpu.copy_to_host())
 
         self.ww = self.ww_gpu.copy_to_host()
         cuda.synchronize()
@@ -162,3 +172,8 @@ class GPURidgeRegression(RidgeRegression):
 
         # Wait for sync
         cuda.synchronize()
+
+    def __get_benchmark_results__(self, weights, X, y):
+        self.w, self.b = weights[:-1], weights[-1]
+        score = self.score(X, y)
+        return score

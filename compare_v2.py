@@ -10,7 +10,7 @@ from models.ridge_regression import RidgeRegression, GPURidgeRegression
 model = Pipeline(
         steps=[
             ("scale", MinMaxScaler()),
-            ("regression", GPURidgeRegression(batch_size=50)),
+            ("regression", GPURidgeRegression(batch_size=300, benchmark=False)),
         ]
     )
 
@@ -24,4 +24,3 @@ model = model.fit(
 score = model.score(X_test, y_test)
 
 print(score)
-

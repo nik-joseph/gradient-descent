@@ -46,3 +46,15 @@ def matrix_product(mat_a, mat_b, no_cuda=False):
     repeat(lambda: kernel_product[blocks_per_grid, THREADS_PER_BLOCK](a_device, b_device, out_device))
 
     return out_device
+
+
+def gpu_matrix_product(mat_a, mat_b):
+    a_device = cuda.to_device(mat_a)
+    b_device = cuda.to_device(mat_b)
+    out_device = cuda.device_array(shape=(mat_a.shape[0], mat_b.shape[1]), dtype=np.float32)
+
+    kernel_product[(48, 48), THREADS_PER_BLOCK](a_device, b_device, out_device)
+
+    cuda.synchronize()
+
+    return out_device.copy_to_host()

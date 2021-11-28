@@ -1,0 +1,1 @@
+from .pima_indian_diabetes import get_pima_indian_diabetes
